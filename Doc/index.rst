@@ -26,7 +26,7 @@ Installing Hybrid Mobile Application Development Frameworks
 + PhoneGap Installation
     Documentation for installing PhoneGap can be found here `Installing PhoneGap`_.
     
-+Trigger.IO
++ Trigger.IO
     Trigger.IO is primarily a cloud build service for creating cross-platform hybrid mobile applications. Since the build service is available via cloud, it requires minimal effort in terms of installation. Following are the steps for installation:
         - Download Trigger.IO Toolkit for OS of your choice from here `Download Trigger.IO Toolkit`_
         - Install the toolkit.
