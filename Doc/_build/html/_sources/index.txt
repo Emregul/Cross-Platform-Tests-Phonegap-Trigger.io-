@@ -1,0 +1,47 @@
+.. CS263 PhoneGap Tutorial documentation master file, created by
+   sphinx-quickstart on Mon May 06 21:34:02 2013.
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
+
+Welcome to CS263 PhoneGap Tutorial's documentation!
+===================================================
+
+**PhoneGap with JQuery Mobile and nodeJS**
+
+Resources
+..........
+
+* PhoneGap: http://phonegap.com/
+
+* jQuery Mobile: http://jquerymobile.com/
+
+* nodejs: http://nodejs.org/
+
+* Android SDK: http://developer.android.com/sdk/installing/index.html
+
+Installation Notes
+..................
+* Windows 8
+* PhoneGap 2.5
+* nodejs 0.10.5
+* jQuery Mobile 1.2
+* Android 4.2
+* Eclipse 4.2.2
+
+Installing PhoneGap
+..................
+
+Download and install Android SDK.
+Add the path for Android SDK platform-tools and tools to Environment Variables
+
+;C:\Development\android-sdk-windows\platform-tools;C:\Development\android-sdk-windows\tools
+
+Then you need to download PhoneGap from  http://phonegap.com/ and extract it to Android Development folder.
+
+Creating a PhoneGap App
+..................
+Go to android bin folder of PhoneGap and execute create command with following inputs.
+./create <project_folder_path> <package_name> <project_name>
+
+Now launch Eclipse and import this project by selecting Android Project from Existing Code from File/New/Project and specify the folder that was created by the previous script.
+
