@@ -1,0 +1,190 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+    
+    <head>
+        
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<link rel="stylesheet" href="codebase/touchui.css" type="text/css">
+            <script src="codebase/touchui.js" type="text/javascript"></script>
+            <script src="jquery-1.7.2.min.js"></script>
+            
+            <title>Twitter</title>
+            
+            </head>
+    <body>
+    	<script type="text/javascript" charset="utf-8">
+            var tweetData = new Array();
+            var queryTerm = new Array();
+            var request_count = 0;
+            var request_limit = 0;
+            var start_time = 0;
+            var queryTerm = "";
+            dhx.ready(function(){
+                      dhx.ui.fullScreen();
+                      dhx.ui({
+                             id: 'app', view: 'layout', height: 900, width: 335,
+                             rows: [
+                                    { view: 'layout', scroll: false, type: 'wide',visibleBatch:"batch1",
+                                    rows: [
+                                           { view: 'toolbar', scroll: false, type: 'MainBar', elements: [{ view: 'label', height:35,label: 'Local Tweets', id: 'control_label_2', align: 'center'}],lablel:'Local Tweets', id: 'toolbar_2'},
+                                           { view: 'form', scroll: false, height: 80,
+                                             elements: [
+                                                        { view: 'input', label: '', popup: '', click: '', maxlength: '', disabled: false, placeholder: '', css: '', type: 'text', id: 'searchText'},
+                                                        { view: 'button', label: 'Search', id: 'searchButton', click: 'submitForm'}
+                                                        ],
+                                           id: 'searchForm', rules:{searchText:dhx.rules.isNotEmpty}},
+                                           { view:"icon", icon: "refresh", align:"center",batch:"batch2", id:'refresh_icon', on:{'onTouchStart': function(){searchTwitterRecent();}}},
+                                           { view: 'list', type: { template:"<table><tr><td><img src='#tweetImage#' style='float:left'></td><td>  #tweetText# </td></tr></table>", width: '335', height: 40, margin: 0, padding: 20}, scroll:'y', id: 'tweetList', datatype: 'json', data: 'tweetData'}
+                                           ],
+                                    id: 'layout_2' }
+                                    ]
+            });
+                      });
+            
+            submitForm = function() {
+                if($$('searchForm').validate()==false) {
+                    dhx.notice("Enter a search term for relevant tweets.");
+                }
+                else {
+                    tweetData = [];
+                    queryTerm = $$('searchText').getValue();
+                    $$('searchForm').clear();
+                    $$('layout_2').showBatch("batch2");
+                    startSearch();
+                }
+                
+            }
+            
+           // $$('tweetList').attachEvent("onafterselect",function(id){
+                                        
+                                        //attachEvent("onTouchMove",function()
+             //                           alert("It Works");
+               //                         });
+            function startSearch(){
+                //alert("startSearch");
+                var gps = navigator.geolocation;
+                /*
+                if (gps){
+                    alert("gps enabled");
+                    gps.getCurrentPosition(searchTwitter(),
+                                           function(error){
+                                           alert("Got an error, code: " + error.code + " message: " +
+                                                 error.message);
+                                           });
+                } else {
+                    searchTwitter();
+                }
+                 */
+                searchTwitter();
+            }
+            function searchTwitterRecent() {
+                var query = "http://search.twitter.com/search.json?q=";
+                query += queryTerm;
+                //For Application
+                
+                query += "&rpp=50&result_type=recent";
+                $.when($.ajax({ url: query, dataType: "jsonp"})).done(showResultsApp);
+
+            }
+            function searchTwitter(position){
+                var query = "http://search.twitter.com/search.json?q=";
+                query += queryTerm;
+                if (position){
+                    var lat = position.coords.latitude;
+                    var long = position.coords.longitude;
+                    query += "&geocode=" + escape(lat + "," + long + ",200mi");
+                    
+                }
+                //For Application
+                
+               // query += "&rpp=50&result_type=mixed";
+               // $.when($.ajax({ url: query, dataType: "jsonp"})).done(showResultsApp);
+
+                //BenchMark
+               // start_time = new Date().getTime();
+
+                //for Concurrent
+                var query_temp = query + "&rpp=5";
+                var queryArray = [];
+                for(var i =0 ; i<10 ; i++) {
+                    queryArray[i] = $.ajax({ url: query_temp, dataType: "jsonp"});
+                }
+                var ajaxRequests = [];
+                for(var i=0; i<queryArray.length;i++){
+                    ajaxRequests.push(queryArray[i]);
+                }
+               start_time = new Date().getTime();
+                var when_obj = $.when.apply($,ajaxRequests);
+                when_obj.done(showResults);
+                
+                //For Sequential
+                /*
+                var queryArray = [];
+                for(var i =0 ; i<10 ; i++) {
+                    var count = (i+1)*5;
+                    var query_temp = query + "&rpp=" + count;
+                    queryArray[i] = query_temp;
+                }
+                alert("Calling function");
+                // set queryArrayLength
+                request_limit = queryArray.length;
+                for(var i =0 ; i < queryArray.length; i++) {
+                    $.when($.ajax({ url: queryArray[i], dataType: "jsonp"})).done(showResultsSync);
+                }
+                 */
+                
+                
+                //alert("second ajax call made.");
+            }
+            function showResultsApp(response){
+                var tweets = response.results;
+                //var tweets = response1[0].results;
+                tweetData = [];
+                tweets.forEach(function(tweet){
+                               tweet.linkUrl = "http://twitter.com/" + tweet.from_user + "/status/" + tweet.id;
+                               tweetData.push({tweetId: tweet.id, tweetText: tweet.text, tweetImage: tweet.profile_image_url});
+                               });
+                
+           // alert("Tweet Data length"+tweetData.length);
+            displayTweets();
+            }
+            
+            function showResults(){
+                var arguments = showResults.arguments;
+                for(var i=0; i< arguments.length ;i++){
+                var tweets = (arguments[i])[0].results;
+                
+                tweets.forEach(function(tweet){
+                               tweet.linkUrl = "http://twitter.com/" + tweet.from_user + "/status/" + tweet.id;
+                               tweetData.push({tweetId: tweet.id, tweetText: tweet.text, tweetImage: tweet.profile_image_url});
+                               });
+                }
+                
+                displayTweets();
+               
+            }
+            function showResultsSync(response){
+                var tweets = response.results;
+                tweets.forEach(function(tweet){
+                               tweet.linkUrl = "http://twitter.com/" + tweet.from_user + "/status/" + tweet.id;
+                               tweetData.push({tweetId: tweet.id, tweetText: tweet.text, tweetImage: tweet.profile_image_url});
+                               });
+                request_count += 1;
+                if(request_count == request_limit) {
+                displayTweets();
+                }
+                
+            }
+                function displayTweets() {
+               // alert("TweetData is = "+ tweetData);
+                $$('tweetList').clearAll();
+                $$('tweetList').parse(tweetData);
+                var time_taken = new Date().getTime() - start_time;
+                request_count = 0;
+                request_limit = 0;
+                    alert("Time taken " + time_taken + " Tweet Length " + tweetData.length);
+            }
+</script>
+</body>
+</html>
