@@ -1,0 +1,453 @@
+
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <title></title>
+  <link rel="stylesheet" href="https://d10ajoocuyu32n.cloudfront.net/mobile/1.3.1/jquery.mobile-1.3.1.min.css">
+  
+  <!-- Extra Codiqa features -->
+  
+  <!-- jQuery and jQuery Mobile -->
+  <script src="https://d10ajoocuyu32n.cloudfront.net/jquery-1.9.1.min.js"></script>
+  <script src="https://d10ajoocuyu32n.cloudfront.net/mobile/1.3.1/jquery.mobile-1.3.1.min.js"></script>
+
+  <!-- Extra Codiqa features -->
+  <script src="https://d10ajoocuyu32n.cloudfront.net/codiqa.ext.js"></script>
+  
+  <!--BACKBONE -->
+  <script src="underscore-min.js"></script>
+  <script src="backbone-min.js"></script>
+  
+  <script type="text/javascript" src="json.js"></script>
+  <script type="text/javascript" src="cache.js"></script>
+  <script type="text/javascript" src="stores.js"></script>
+   
+  <script src="javascripts/iscroll.js" type="text/javascript"></script>
+  <script src="javascripts/jquery.mobile.iscrollview.js" type="text/javascript"></script>
+  
+  <link href="stylesheets/1_0_1/jquery.mobile-1.0.1.min.css" media="screen" rel="stylesheet" type="text/css" />
+  <link href="stylesheets/jquery.mobile.iscrollview.css" media="screen" rel="stylesheet" type="text/css" />
+  <link href="stylesheets/jquery.mobile.iscrollview-pull.css" media="screen" rel="stylesheet" type="text/css" />
+  <style type="text/css">
+.weet {
+  width: 400px;
+  height: 100px;
+  text-align: center;
+}
+
+.spanned {
+  display: inline-block;
+  vertical-align: middle;
+  line-height: normal;      
+}
+   </style> 
+   
+   
+<script>
+
+	
+$(function()
+{
+	
+var count = 0;
+var Tweet = Backbone.Model.extend({
+	defaults: function(){
+	return {
+		id: 0,
+		text: "some text",
+		image: "some url",
+		top: false
+	};
+	},
+	setTweet: function(target_id,target_text,url) {
+		this.save({id: target_id, text: target_text, image:url});
+	}
+	}); 
+	
+var TweetList = Backbone.Collection.extend({
+	model: Tweet,
+	initialize: function (models, options) {
+	this.bind("add", options.view.addOne);
+}
+});
+
+
+
+var TweetView = Backbone.View.extend({
+   template: _.template($('#tweet-template').html()),
+   render: function() {
+	  var a = this.el;
+      $(a).html(this.template(this.model.toJSON()));
+	  $(a).fadeIn();
+      return this;
+    }
+   });
+   
+var AppView = Backbone.View.extend({
+	 el: $("#tweet-app"),
+	 events: {
+      "keypress #new-search":  "searchOnEnter",
+	  "click #renderOld": "renderOlder",
+	  "click #renderNew": "renderNewer",
+    },
+	
+	initialize: function() {
+	  this.input = this.$("#new-search");
+	  this.main = $('#main');
+      this.Tweets = new TweetList(null, { view:this} );
+	  console.log('init called');
+	  
+    },
+	
+	
+	addOne: function(tweet) {
+	  //lastId = tweet.id;
+    console.log("came here");
+	
+    var content = "<li><span> Tweet " + tweet.get("text") + "</span></li>";
+    //$(listSelector).prepend(content).listview("refresh");  // Prepend new content and refresh listview
+    //data.iscrollview.refresh();
+    console.log("refresh called");
+      
+    var view = new TweetView({model: tweet});
+  //  $(listSelector).prepend(content).listview("refresh");
+                                
+	  if (topAdd)
+        $(listSelector).prepend(content).listview("refresh");  // Prepend new content and refresh listview
+		//$("#tweet-list").prepend(view.render().el);
+	  else
+        $(listSelector).append(content).listview("refresh");  // Append new content and refresh listview
+		//$("#tweet-list").append(view.render().el);
+                                    
+    },
+	
+    addAll: function() {
+      this.Tweets.each(this.addOne, this);
+                                   console.log("came in addAll");
+    },
+	
+	 searchOnEnter: function(e) {
+      if (e.keyCode != 13) return;
+      if (!this.input.val()) return;
+	  search();
+                                   console.log("called search function");
+	  var list = this.Tweets;
+      setTimeout(function()
+	  {
+                 console.log("going over tweets "+ tweetData.length);
+		for (var i = 0; i<tweetData.length;i++)
+            {
+			count++;
+				console.log(tweetData[i].content);
+			    list.add({id: tweetData[i].tweetId, text:tweetData[i].tweetText, url:"",top:false});
+				topAdd = false;
+				
+                	
+            }
+	  },2000);
+	  
+    },
+	renderOlder: function(e) {
+
+	  var lastTweetId = lastId;
+                var i = metaArray.indexOf(lastTweetId);
+                if( i + 20 < tweetCacheSize) {
+                    for(var j = i+1; j < i + 20;j++) {
+                        var tweetDetails = tweetCache.get(metaArray[j]);
+                        this.Tweets.add({id:0, text:tweetDetails.tweetText,url:" ", top:false});
+						topAdd = false;
+                    }
+                }
+                else {
+                    warmCache(queryTerm, 50);
+                    for(var j = i+1; j < i + 20;j++) {
+                        var tweetDetails = tweetCache.get(metaArray[j]);
+                        this.Tweets.add({id:tweetDetails.tweetId, text:tweetDetails.tweetText,url:tweetDetails.tweetImage, top:false});
+						topAdd = false;
+                    }
+                }
+	  
+	  
+    },
+	renderNewer: function(e) {
+				 var list = this.Tweets;
+                var query = "http://search.twitter.com/search.json?q=";
+                query += queryTerm;
+                query += "&rpp=20" + "&result_type=recent";
+               // $.when($.ajax({ url: query, dataType: "jsonp"})).done(loadNewTweets);
+				
+				$.ajax({
+
+    url: "http://otter.topsy.com/search.json?q="+queryTerm+"&window=dynamic&apikey=TQW7NPHCPZ3I4QSDG4LQAAAAACZIIGCR25IQAAAAAAAFQGYA",
+
+    dataType: 'jsonp',
+
+    success: function(results){
+
+        loadNewTweets(results);
+
+    }});
+                setTimeout(function()
+				{
+				console.log(newTweets);
+				for (var i = 0; i<newTweets.length;i++)
+				{
+					console.log(newTweets[i].tweetText);
+					count++;
+					list.add({id: newTweets[i].tweetText, text:newTweets[i].tweetText, url: " ", top:true});
+					topAdd = true;
+                	
+				}
+				},1000);
+                
+    },
+	
+	});
+	console.log('begin');
+	var App = new AppView;
+    var listSelector = "div.pull-demo-page ul.ui-listview"
+    var newcontent = "";
+    var tweetCache = null;
+    var metaArray = new Array();
+    var tweetCacheSize = 0;
+    var queryTerm = "";
+    var tweetData = [];
+    var lastId = 0; 
+	var newTweets = []; 	
+	var topAdd = false;
+	function search()
+    {
+    searchTwitter();
+    }
+            function searchTwitter(position){
+			
+                var query = "	http://otter.topsy.com/search.json?q=";
+                if(queryTerm != $("#new-search").val()) {
+                queryTerm = $("#new-search").val();
+                    tweetCache = null;
+                }
+                query += queryTerm ;
+                if (position){
+                    var lat = position.coords.latitude;
+                    var long = position.coords.longitude;
+                    query += "&geocode=" + escape(lat + "," + long + ",200mi");
+                }
+				
+				$.ajax({
+
+    url: "http://otter.topsy.com/search.json?q="+queryTerm+"&window=dynamic&apikey=TQW7NPHCPZ3I4QSDG4LQAAAAACZIIGCR25IQAAAAAAAFQGYA",
+
+    dataType: 'jsonp',
+
+    success: function(results){
+
+        showResultsApp(results);
+
+    }
+
+});
+
+                query += "&window=dynamic&apikey=TQW7NPHCPZ3I4QSDG4LQAAAAACZIIGCR25IQAAAAAAAFQGYA";
+				//$.when($.ajax({ url: query, dataType: "jsonp"})).done(showResultsApp);
+                //$.ajax({ url: query, dataType: "jsonp",success: function(results){console.log(results);}, failure: function(){console.log("yes");}});
+                warmCache(queryTerm, 100);
+            }
+			 function warmCache(term, addcount) {
+                tweetCache = cache();
+                tweetCache.setStore(arrayStore);
+                var query = "	http://otter.topsy.com/search.json?q=";
+                query += term;
+                tweetCacheSize += addcount;
+                query += "&window=dynamic&apikey=TQW7NPHCPZ3I4QSDG4LQAAAAACZIIGCR25IQAAAAAAAFQGYA";
+				$.ajax({
+
+    url: "http://otter.topsy.com/search.json?q="+queryTerm+"&window=dynamic&apikey=TQW7NPHCPZ3I4QSDG4LQAAAAACZIIGCR25IQAAAAAAAFQGYA",
+
+    dataType: 'jsonp',
+
+    success: function(results){
+
+        showResultsApp(results);
+
+    }
+
+});
+                //$.when($.ajax({ url: query, dataType: "jsonp"})).done(warmCacheUpdate);
+            }
+			function showResultsApp(response){
+                console.log(response);
+			 
+                var tweets = response.response.list;
+                tweetData = [];
+                tweets.forEach(function(tweet){
+                               //tweet.linkUrl = "http://twitter.com/" + tweet.from_user + "/status/" + tweet.id;
+							   var id = tweet.trackback_permalink.indexOf("status")+7;
+							   var newid = tweet.trackback_permalink.substring(id,tweet.trackback_permalink.length);
+							   console.log(newid);
+                               tweetData.push({tweetId: newid, tweetText: tweet.content, tweetImage: tweet.profile_image_url});
+                               metaArray.push(newid);
+                               });
+				
+            }
+			 function warmCacheUpdate(response) {
+                var tweets = response.response.list;
+                tweets.forEach(function(tweet){
+                    var tweet_details = {tweetId: tweet.id, tweetText: tweet.content, tweetImage: tweet.profile_image_url};
+                    tweetCache.set(tid,tweet_details);
+                    //tweetData.push({tweetId: tweet.id, tweetText: tweet.text, tweetImage: tweet.profile_image_url});
+                    if(metaArray.indexOf(tweet.id) == -1) {
+                            metaArray.push(id);
+                    }
+                });
+            }
+			function loadNewTweets(response) {
+				console.log(response);
+                var tweets = response.response.list;
+				newTweets = [];
+                tweets.forEach(function(tweet){
+                                 var id = tweet.trackback_permalink.indexOf("status")+7;
+							   var newid = tweet.trackback_permalink.substring(id,tweet.trackback_permalink.length);
+                               var tweet_details = {tweetId: newid, tweetText: tweet.content, tweetImage: tweet.profile_image_url};
+							   console.log(tweet_details);
+							   newTweets.push(tweet_details);
+                               tweetCache.set(id,tweet_details);
+                               tweetCacheSize += 1;
+                            });
+            }
+  
+  (function pullPagePullImplementation($) {
+   "use strict";
+   var pullDownGeneratedCount = 0,
+   pullUpGeneratedCount = 0,
+   listSelector = "div.pull-demo-page ul.ui-listview",
+   lastItemSelector = listSelector + " > li:last-child";
+   
+   /* For this example, I prepend three rows to the list with the pull-down, and append
+    * 3 rows to the list with the pull-up. This is only to make a clear illustration that the
+    * action has been performed. A pull-down or pull-up might prepend, append, replace or modify
+    * the list in some other way, modify some other page content, or may not change the page
+    * at all. It just performs whatever action you'd like to perform when the gesture has been
+    * completed by the user.
+    */
+   function gotPullDownData(event, data) {
+   var i,
+   newContent = "";
+   for (i=0; i<3; i+=1) {  // Generate some fake new content
+   newContent = "<li>Pulldown-generated row " + (++pullDownGeneratedCount) + "</li>" + newContent;
+   }
+   $(listSelector).prepend(newContent).listview("refresh");  // Prepend new content and refresh listview
+   data.iscrollview.refresh();    // Refresh the iscrollview
+   }
+   
+   function gotPullUpData(event, data) {
+   var i,
+   iscrollview = data.iscrollview,
+   newContent = "";
+   for (i=0; i<3; i+=1) {
+   newContent += "<li>Pullup-generated row " + (++pullUpGeneratedCount) + "</li>";
+   }
+   $(listSelector).append(newContent).listview("refresh");
+   
+   // The refresh is a bit different for the pull-up, because I want to demonstrate the use
+   // of refresh() callbacks. The refresh() function has optional pre and post-refresh callbacks.
+   // Here, I use a post-refresh callback to do a timed scroll to the bottom of the list
+   // after the new elements are added. The scroller will smoothly scroll to the bottom over
+   // a 400mSec period. It's important to use the refresh() callback to insure that the scroll
+   // isn't started until the scroller has first been refreshed.
+   iscrollview.refresh(null, null,
+                       $.proxy(function afterRefreshCallback(iscrollview) {
+                               this.scrollToElement(lastItemSelector, 400);
+                               }, iscrollview) );
+   }
+   
+   // This is the callback that is called when the user has completed the pull-down gesture.
+   // Your code should initiate retrieving data from a server, local database, etc.
+   // Typically, you will call some function like jQuery.ajax() that will make a callback
+   // once data has been retrieved.
+   //
+   // For demo, we just use timeout to simulate the time required to complete the operation.
+   function onPullDown (event, data) {
+   setTimeout(function fakeRetrieveDataTimeout() {
+              App.renderNewer();
+              // gotPullDownData(event, data);
+              },
+              1500);
+   }
+   
+   // Called when the user completes the pull-up gesture.
+   function onPullUp (event, data) {
+   setTimeout(function fakeRetrieveDataTimeout() {
+              App.renderOlder();
+              //gotPullUpData(event, data);
+              },
+              1500);
+   }
+   
+   // Set-up jQuery event callbacks
+   $(document).delegate("div.pull-demo-page", "pageinit",
+                        function bindPullPagePullCallbacks(event) {
+                        $(".iscroll-wrapper", this).bind( {
+                                                         iscroll_onpulldown : onPullDown,
+                                                         iscroll_onpullup   : onPullUp
+                                                         } );
+                        } );
+   
+   }(jQuery));
+
+
+ });
+    
+    
+    
+</script>
+   
+</head>
+<body>
+<!-- Home -->
+<div id="tweet-app">
+	<section id="main">
+	<div class="pull-demo-page" data-role="page">
+        <div class="header" data-position="fixed" data-role="header">
+            <h1> Local Twiter Search </h1>
+            </div>
+        
+         <form>
+        <input type="text" id="new-search" class="itemValue" placeholder="enter search term here" />
+             </form>
+             
+<div data-role="content" data-iscroll>
+    <div class="listviewWrapper">
+    <span data-iscroll-pulled-text="Now let er go, and we'll get some refresh action!"
+        data-iscroll-loading-text="Ye-haw! Waiting for the data to come through the pipes!"
+        class="iscroll-pull-label"></span>
+    <div class="iscroll-pulldown">
+        <span class="iscroll-pull-icon"></span>
+        <span class="iscroll-pull-label"></span>
+    </div>
+        <ul data-role="listview" class="ui-listview">
+            <!-- ...losts of data... -->
+        </ul>
+        
+   
+	 
+   
+    <div class="iscroll-pullup">
+        <span class="iscroll-pull-icon"></span>
+        <span class="iscroll-pull-label"></span>
+        </div>
+    </div>
+</div>
+    </div>
+
+     </section>
+
+</div>
+
+<script type="text/template" id="tweet-template">
+<div class ="weet"><img src= "<%= url %>" align = "left">   </img> <%= text %></div>
+</script>
+</body>
+</html>
